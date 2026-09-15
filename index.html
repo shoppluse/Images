@@ -3,21 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This meta tag prevents the browser from sending a referrer header, bypassing most hotlink protections -->
+    <meta name="referrer" content="no-referrer"> 
+    
     <title>Image Vault</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- CSS is now embedded here -->
+    <style>
+        :root {
+            --bg-color: #0b132b; /* Dark Navy Blue */
+            --card-bg: rgba(28, 37, 65, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #8a9bbd;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Glassmorphism Header */
+        .glass-header {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 2rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .glass-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .glass-header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        main {
+            padding: 3rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Responsive Grid Layout */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Image Card & Micro-interactions */
+        .image-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .image-card:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Loading and Error States */
+        .loading {
+            text-align: center;
+            grid-column: 1 / -1;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            padding: 2rem;
+        }
+    </style>
 </head>
 <body>
     <header class="glass-header">
         <h1>Image Vault</h1>
-        <p>Dynamically loaded from JSON</p>
+        <p>Dynamic JSON Image Gallery</p>
     </header>
 
     <main>
         <div id="gallery-container" class="gallery-grid">
-            <!-- Images will be injected here by JavaScript -->
+            <!-- Images will be injected here by the script below -->
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <!-- JavaScript is now embedded here -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const galleryContainer = document.getElementById("gallery-container");
+
+            async function loadImages() {
+                try {
+                    // Display loading indicator
+                    galleryContainer.innerHTML = '<div class="loading">Loading images...</div>';
+
+                    // Fetch the image data
+                    const response = await fetch('images.json');
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const images = await response.json();
+                    
+                    // Clear loading indicator
+                    galleryContainer.innerHTML = '';
+
+                    // Generate HTML for each image object
+                    images.forEach(image => {
+                        const card = document.createElement('div');
+                        card.className = 'image-card';
+                        
+                        const img = document.createElement('img');
+                        img.src = image.url;
+                        img.alt = "Gallery image";
+                        img.loading = "lazy"; // Optimizes rendering
+                        
+                        // If the URL is invalid or blocked by CORS/Hotlinking
+                        img.onerror = function() {
+                            this.style.display = 'none'; // Hide the broken image icon
+                            
+                            const errorText = document.createElement('p');
+                            errorText.style.color = '#ff6b6b';
+                            errorText.style.padding = '1rem';
+                            errorText.style.textAlign = 'center';
+                            errorText.innerText = 'Image blocked by host or URL is invalid.';
+                            errorText.style.fontFamily = 'inherit';
+                            
+                            card.appendChild(errorText);
+                        };
+
+                        card.appendChild(img);
+                        galleryContainer.appendChild(card);
+                    });
+
+                } catch (error) {
+                    console.error("Could not load images:", error);
+                    galleryContainer.innerHTML = `<div class="loading">Error loading images. Please ensure you are running a local development server.</div>`;
+                }
+            }
+
+            loadImages();
+        });
+    </script>
 </body>
 </html>
